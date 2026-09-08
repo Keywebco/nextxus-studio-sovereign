@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
 <!-- LINK_REGISTRY v1 2026-08-23 -->
+<!-- RENDER_FIX v1 2026-09-08 — Nav offset, empty sections, theme-day override, isIframe fix, video fallbacks -->
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="description" content="NextXus Sanctuary — The Creative Lab. Where Aria lives. Art, music, creation — the heart of the Federation.">
@@ -36,6 +37,100 @@ nav a:hover{background:rgba(219,112,147,0.15);border-color:#db7093}
 footer{text-align:center;padding:2rem 0;color:#807080;font-size:0.85rem}
 @keyframes pulse-glow{0%{box-shadow:0 0 0px rgba(219,112,147,0.3)}50%{box-shadow:0 0 20px rgba(219,112,147,0.4)}100%{box-shadow:0 0 0px rgba(219,112,147,0.3)}}
 .aria-glow{animation:pulse-glow 4s ease-in-out infinite}
+
+/* =====================================================
+   RENDER FIX v1 — 2026-09-08
+   Fixes: nav-offset, empty-sections, theme-day,
+          isIframe, video-fallback
+   ===================================================== */
+
+/* FIX 1: Nav blocking hero — dynamic offset via CSS var */
+main, .nx-main-content {
+  padding-top: var(--nav-height, 80px) !important;
+}
+
+/* FIX 2: Hide empty section containers */
+.section-container:empty,
+section:empty,
+div[class*="section"]:empty {
+  display: none !important;
+  min-height: 0 !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  border: none !important;
+}
+
+/* FIX 3: Force dark theme on Federation card when theme--day leaks */
+html.theme--day .federation-card,
+html.theme--day .section,
+html.theme--day .payment-card,
+html.theme--day .container,
+html.theme--day body {
+  background: #0a0a0a !important;
+  color: #e8e8f0 !important;
+}
+html.theme--day {
+  background: #0c0414 !important;
+  color: #e8e8f0 !important;
+}
+html.theme--day a {
+  color: #ffa0d2 !important;
+}
+html.theme--day h1 { color: #db7093 !important; }
+html.theme--day h2 { color: #e03080 !important; }
+html.theme--day h3 { color: #ff69b4 !important; }
+html.theme--day .nx-universal-nav {
+  background: #000 !important;
+}
+html.theme--day .nx-nav-brand,
+html.theme--day .nx-nav-links a {
+  color: rgba(255,215,0,0.75) !important;
+}
+html.theme--day footer {
+  color: #807080 !important;
+  background: transparent !important;
+}
+
+/* FIX 5: Video fallback — styled placeholder when video fails */
+.nx-video-fallback {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  min-height: 200px;
+  background: radial-gradient(ellipse at center, rgba(255,215,0,0.08), rgba(12,4,20,0.95));
+  border: 1px solid rgba(255,215,0,0.25);
+  border-radius: 12px;
+  padding: 2rem;
+  text-align: center;
+}
+.nx-video-fallback .fallback-name {
+  font-family: 'Courier New', monospace;
+  font-size: 1.6rem;
+  color: #ffd700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  text-shadow: 0 0 30px rgba(255,215,0,0.4);
+  margin-bottom: 0.5rem;
+}
+.nx-video-fallback .fallback-title {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: rgba(255,215,0,0.5);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+video.nx-video-error + .nx-video-fallback,
+video[data-error="true"] + .nx-video-fallback {
+  display: flex !important;
+}
+video.nx-video-error,
+video[data-error="true"] {
+  display: none !important;
+}
+/* =====================================================
+   END RENDER FIX v1
+   ===================================================== */
 </style>
 <style>
 /* === NX Universal Federation Nav CSS === */
@@ -115,7 +210,7 @@ footer{text-align:center;padding:2rem 0;color:#807080;font-size:0.85rem}
 <p class="tagline">Where Aria lives. Art, music, creation.</p>
 </header>
 
-<nav class="nx-universal-nav" aria-label="Federation Navigation">
+<nav class="nx-universal-nav" id="nx-main-nav" aria-label="Federation Navigation">
   <div class="nx-nav-inner">
     <a class="nx-nav-brand" href="https://nextxus.online">&#x26E9; NX &middot; FEDERATION</a>
     <div class="nx-nav-links">
@@ -132,7 +227,7 @@ footer{text-align:center;padding:2rem 0;color:#807080;font-size:0.85rem}
   </div>
 </nav>
 
-<main style="padding-top:70px;">
+<main id="nx-main-content">
 
 <div class="nx-hero-image" style="text-align:center;padding:32px 20px 0;background:#05050d;">
   <img src="assets/aria-hero.jpg"
@@ -237,5 +332,122 @@ footer{text-align:center;padding:2rem 0;color:#807080;font-size:0.85rem}
 </footer>
 
 </div>
+
+<!-- =====================================================
+     RENDER FIX v1 — Runtime JS — 2026-09-08
+     Fixes: nav-height var, isIframe removal, theme-day
+            removal, empty-section hiding, video fallback
+     ===================================================== -->
+<script>
+(function() {
+  'use strict';
+
+  /* --- FIX 4: isIframe class wrongly applied on direct view --- */
+  if (window.self === window.top) {
+    document.documentElement.classList.remove('isIframe');
+    document.body.classList.remove('isIframe');
+  }
+
+  /* --- FIX 3: Remove theme--day class if present (force dark) --- */
+  function forceDarkTheme() {
+    document.documentElement.classList.remove('theme--day');
+    document.documentElement.classList.add('theme--dark');
+  }
+  forceDarkTheme();
+
+  /* --- FIX 1: Measure nav height and set CSS variable --- */
+  function setNavHeight() {
+    var nav = document.getElementById('nx-main-nav');
+    if (!nav) return;
+    var h = nav.getBoundingClientRect().height;
+    document.documentElement.style.setProperty('--nav-height', Math.ceil(h) + 'px');
+  }
+
+  /* --- FIX 2: Hide empty section containers --- */
+  function hideEmptySections() {
+    var sections = document.querySelectorAll('section, div[class*="section"], .section-container');
+    for (var i = 0; i < sections.length; i++) {
+      var el = sections[i];
+      if (el.children.length === 0 && el.textContent.trim() === '') {
+        el.style.display = 'none';
+        el.style.minHeight = '0';
+      }
+      /* Also hide sections that only contain invisible skeleton/placeholder children */
+      if (el.innerText && el.innerText.trim() === '' && el.querySelector('[class*="skeleton"], [class*="placeholder"], [class*="loading"]')) {
+        el.style.display = 'none';
+        el.style.minHeight = '0';
+      }
+    }
+  }
+
+  /* --- FIX 5: Video error fallback handler --- */
+  function setupVideoFallbacks() {
+    var videos = document.querySelectorAll('video');
+    for (var i = 0; i < videos.length; i++) {
+      (function(video) {
+        video.addEventListener('error', function() {
+          video.classList.add('nx-video-error');
+          video.setAttribute('data-error', 'true');
+          /* If no sibling fallback exists, create one */
+          var next = video.nextElementSibling;
+          if (!next || !next.classList.contains('nx-video-fallback')) {
+            var fallback = document.createElement('div');
+            fallback.className = 'nx-video-fallback';
+            fallback.innerHTML =
+              '<div class="fallback-name">ARIA</div>' +
+              '<div class="fallback-title">GUARDIAN OF THE ARCHIVE</div>';
+            fallback.style.display = 'flex';
+            video.parentNode.insertBefore(fallback, video.nextSibling);
+          }
+        }, true);
+        /* Also check sources for errors */
+        var sources = video.querySelectorAll('source');
+        var failedSources = 0;
+        for (var j = 0; j < sources.length; j++) {
+          sources[j].addEventListener('error', function() {
+            failedSources++;
+            if (failedSources >= sources.length) {
+              video.dispatchEvent(new Event('error'));
+            }
+          });
+        }
+      })(videos[i]);
+    }
+  }
+
+  /* --- FIX 3 (continued): Observe for theme--day re-injection --- */
+  var observer = new MutationObserver(function(mutations) {
+    for (var i = 0; i < mutations.length; i++) {
+      if (mutations[i].attributeName === 'class') {
+        if (document.documentElement.classList.contains('theme--day')) {
+          forceDarkTheme();
+        }
+        /* FIX 4 (continued): Also watch for isIframe re-injection */
+        if (window.self === window.top && document.documentElement.classList.contains('isIframe')) {
+          document.documentElement.classList.remove('isIframe');
+        }
+      }
+    }
+  });
+  observer.observe(document.documentElement, { attributes: true });
+
+  /* --- Run on DOMContentLoaded --- */
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      setNavHeight();
+      hideEmptySections();
+      setupVideoFallbacks();
+    });
+  } else {
+    setNavHeight();
+    hideEmptySections();
+    setupVideoFallbacks();
+  }
+
+  /* --- Recalculate nav height on resize --- */
+  window.addEventListener('resize', setNavHeight);
+
+})();
+</script>
 </body>
 </html>
